@@ -47,9 +47,7 @@ class ElasticNet:
         cities and the neurons.
         """
         
-        return numpy.array(
-            [numpy.dot(self._weights[:,i],
-                       self._delta[:,i]) for i in range(self._num_neurons)])
+        return numpy.einsum("ij,ijk->jk", self._weights, self._delta)
 
     def _init_neurons(self):
         """
@@ -68,18 +66,9 @@ class ElasticNet:
     def _length_force(self):
         """Compute the force that minimize the length of the elastic."""
         
-        return numpy.concatenate((
-            [self._neurons[1] - 2 * self._neurons[0] 
-             + self._neurons[self._num_neurons - 1]],
-            
-            [(self._neurons[i+1]
-              - 2 * self._neurons[i]
-              + self._neurons[i-1])
-             for i in range(1, self._num_neurons - 1)],
-            
-            [self._neurons[0]
-             - 2 * self._neurons[self._num_neurons - 1]
-             + self._neurons[self._num_neurons - 2]]))
+        add = numpy.roll(self._neurons, 1, axis=0)
+        sub = numpy.roll(self._neurons, -1, axis=0)
+        return add - 2 * self._neurons + sub
 
     def _stop_criteria(self):
         """Return True if the algorithm has finished, False otherwise."""
